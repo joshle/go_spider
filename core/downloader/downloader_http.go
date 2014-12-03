@@ -4,7 +4,8 @@ import (
     "bytes"
     "github.com/PuerkitoBio/goquery"
     "github.com/bitly/go-simplejson"
-    iconv "github.com/djimenez/iconv-go"
+    //iconv "github.com/djimenez/iconv-go"
+    "github.com/qiniu/iconv"
     "github.com/hu17889/go_spider/core/common/mlog"
     "github.com/hu17889/go_spider/core/common/page"
     "github.com/hu17889/go_spider/core/common/request"
@@ -84,13 +85,16 @@ func (this *HttpDownloader) getCharset(header http.Header) string {
 // Get page body and change it to utf-8
 func (this *HttpDownloader) changeCharset(charset string, sor io.ReadCloser) string {
     var err error
-    var converter *iconv.Converter
+    //var converter *iconv.Converter
+    var converter *iconv.Iconv
     if charset != "" && strings.ToLower(charset) != "utf-8" && strings.ToLower(charset) != "utf8" {
-        converter, err = iconv.NewConverter(charset, "utf-8")
+        //converter, err = iconv.NewConverter(charset, "utf-8")
+        conv, err := iconv.Open("utf-8", charset)
         if err != nil {
             mlog.LogInst().LogError(err.Error())
             return ""
         }
+        converter = &conv
         defer converter.Close()
     }
 
@@ -104,11 +108,12 @@ func (this *HttpDownloader) changeCharset(charset string, sor io.ReadCloser) str
     var destbody string
     if converter != nil {
         // convert to utf8
-        destbody, err = converter.ConvertString(bodystr)
+        /**destbody, err = converter.ConvertString(bodystr)
         if err != nil {
             mlog.LogInst().LogError(err.Error())
             return ""
-        }
+        }*/
+        destbody = converter.ConvString(bodystr)
     } else {
         destbody = bodystr
     }
